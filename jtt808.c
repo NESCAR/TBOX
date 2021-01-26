@@ -183,15 +183,11 @@ bool Validate(const BYTE rawBinarySeq[], const int len) {
 JTT_ERROR DecodeForMsgHeader(const BYTE rawBinarySeq[], PackageData* packageData, const int len) {
     if (12 > len) {
         return ERR_LENGTH_TOO_SHORT;
-    } 
-    if (false == Validate(rawBinarySeq, len)) {
-        return ERR_INVALIDATE_MSG;
     }
 
-    
 
     // 0, 1  -   消息 ID
-    packageData->msgHeader.msgId =  ((WORD)((rawBinarySeq[0] << 8) & 0xff)) + ((WORD)(rawBinarySeq[1] & 0xff));
+    packageData->msgHeader.msgId =  ((WORD)((rawBinarySeq[0] << 8) & 0xff00)) + ((WORD)(rawBinarySeq[1] & 0xff));
 
     // 2,3 - 消息体属性
 
@@ -205,12 +201,17 @@ JTT_ERROR DecodeForMsgHeader(const BYTE rawBinarySeq[], PackageData* packageData
     // 10,11 - 消息流水号
     packageData->msgHeader.flowId = ((WORD)((rawBinarySeq[10] << 8) & 0xff)) + ((WORD)(rawBinarySeq[11] & 0xff));
 
+    packageData->msgBody = rawBinarySeq+12;
+
+
     if (true == packageData->msgHeader.msgBodyProperties.hasSubPackage) {
         // 12, 13 消息总包数
         packageData->msgHeader.msgPackagingItem.total = ((WORD)((rawBinarySeq[12] << 8) & 0xff)) + ((WORD)(rawBinarySeq[13] & 0xff));
         // 14, 15 包序号
         packageData->msgHeader.msgPackagingItem.total = ((WORD)((rawBinarySeq[14] << 8) & 0xff)) + ((WORD)(rawBinarySeq[15] & 0xff));
+        packageData->msgBody = rawBinarySeq+16;
     }
+
     return ERR_NONE;
 }
 
@@ -402,12 +403,13 @@ JTT_ERROR EncodeForCRMB(const CommonRespMsgBody *crmb, BYTE binarySeq[]/*, const
     // 16至检验码前一字节-消息体
     // 前提：无消息包封装项 12至检验码前一字节-消息体
 
-    int startIndex = 12;
-    // 消息体属性占两个字节，高字节的第6位是分包信息位
-    // 如果有子包
-    if ((binarySeq[2] >> 5) & 1) {
-        startIndex = 16;
-    }
+//    int startIndex = 12;
+//    // 消息体属性占两个字节，高字节的第6位是分包信息位
+//    // 如果有子包
+//    if ((binarySeq[2] >> 5) & 1) {
+//        startIndex = 16;
+//    }
+    int startIndex = 0;
     // 应答流水号 startIndex ~ startIndex + 1;
     binarySeq[startIndex] = (BYTE)((crmb->replyFlowId >> 8) & 0xff);
     binarySeq[startIndex + 1] = (BYTE)(crmb->replyFlowId & 0xff);
@@ -436,14 +438,14 @@ JTT_ERROR DecodeForCRMB(CommonRespMsgBody *crmb, const BYTE binarySeq[]/*, const
     // 16至检验码前一字节-消息体
     // 前提：无消息包封装项 12至检验码前一字节-消息体
 
-    // int hasSubpackage = 0;
-    int startIndex = 12;
-    // 消息体属性占两个字节，高字节的第6位是分包信息位
-    if ((binarySeq[2] >> 5) & 1) {
-        startIndex = 16;
-    }
+//    // int hasSubpackage = 0;
+//    int startIndex = 12;
+//    // 消息体属性占两个字节，高字节的第6位是分包信息位
+//    if ((binarySeq[2] >> 5) & 1) {
+//        startIndex = 16;
+//    }
 
-
+    int startIndex = 0;
     // 应答流水号 startIndex ~ startIndex + 1;
     crmb->replyFlowId = (((WORD)(binarySeq[startIndex])) << 8) + binarySeq[startIndex+1];
 
@@ -524,5 +526,11 @@ JTT_ERROR DecodeForTRMRB(TerminalRegisterMsgRespBody *trmrb, const BYTE binarySe
     if (RRR_SUCCESS == trmrb->replyCode) {
         memcpy(trmrb->replyToken, &binarySeq[startIndex+3], msgBodyLen - 3);
     }
+    return ERR_NONE;
+}
+
+JTT_ERROR GetMsgID(const BYTE binarySeq[],int* id)
+{
+    id= (int)((binarySeq[0]<<8) + binarySeq[1]);
     return ERR_NONE;
 }

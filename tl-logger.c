@@ -86,7 +86,6 @@ static TLLoggerLogItemData *tl_logger_log_item_data_dup(
     {
         return NULL;
     }
-
     new_data = g_new0(TLLoggerLogItemData, 1);
     new_data->name = g_strdup(data->name);
     new_data->value = data->value;

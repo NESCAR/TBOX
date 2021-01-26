@@ -7,5 +7,6 @@ gboolean tl_gps_init();
 void tl_gps_uninit();
 void tl_gps_state_get(guint8 *state, guint32 *latitude, guint32 *longitude);
 void gps_init();
+void tl_gps_message_get(GByteArray *garray);
 
 #endif

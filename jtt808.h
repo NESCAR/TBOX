@@ -60,11 +60,19 @@ enum MsgId {
 
 };
 typedef enum MsgId MsgId;
-typedef unsigned char  BYTE;
-typedef unsigned short WORD;
-// typedef unsigned int   DWORD;
-typedef unsigned char  BCD;
 
+#ifndef BYTE
+typedef unsigned char  BYTE;
+#endif
+
+#ifndef WORD
+typedef unsigned short WORD;
+#endif
+
+// typedef unsigned int   DWORD;
+#ifndef BCD
+typedef unsigned char  BCD;
+#endif
 typedef struct _MsgBodyProperties {
     BYTE           reservedBit;
     bool           hasSubPackage;
@@ -131,7 +139,7 @@ JTT_ERROR DecodeForCRMB(CommonRespMsgBody *crmb, const BYTE binarySeq[]/*, const
 JTT_ERROR EncodeForTRMB(const TerminalRegisterMsgBody *trmb, BYTE binarySeq[]/*, const int len*/);
 JTT_ERROR DecodeForTRMRB(TerminalRegisterMsgRespBody *trmrb, const BYTE binarySeq[]/*, const int len*/);
 
-
+JTT_ERROR GetMsgID(const BYTE binarySeq[],int* id);
 #ifdef __cplusplus
 }
 #endif

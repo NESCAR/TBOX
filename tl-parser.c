@@ -451,7 +451,6 @@ gboolean tl_parser_parse_can_data(const gchar *device,
         /*
         g_debug("Got %s value %"G_GUINT64_FORMAT".", signal_data->name, value);
         */
-
         item_data.name = signal_data->name;
         item_data.value = value;
         item_data.unit = signal_data->unit;
@@ -459,10 +458,8 @@ gboolean tl_parser_parse_can_data(const gchar *device,
         item_data.list_parent = signal_data->listparent;
         item_data.list_index = (signal_data->listindex!=0);
         item_data.offset = signal_data->offset;
-
         tl_logger_current_data_update(&item_data);
     }
-
     return parsed;
 }
 

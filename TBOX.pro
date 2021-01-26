@@ -10,7 +10,8 @@ SOURCES += main.c \
     tl-canbus.c \
     tl-gps.c \
     tl-net.c \
-    jtt808.c
+    jtt808.c \
+    tl-jtt808-msg.c
 
 HEADERS += \
     tl-parser.h \
@@ -18,7 +19,8 @@ HEADERS += \
     tl-canbus.h \
     tl-gps.h \
     tl-net.h \
-    jtt808.h
+    jtt808.h \
+    tl-jtt808-msg.h
 
 unix:!macx: LIBS += -L$$PWD/../../lib/glib/lib/ -lglib-2.0 -lgio-2.0 -lgobject-2.0
 
@@ -37,5 +39,5 @@ unix:!macx: LIBS += -L$$PWD/../../lib/libffi/lib/ -lffi
 INCLUDEPATH += $$PWD/../../lib/libffi/include
 DEPENDPATH += $$PWD/../../lib/libffi/include
 
-#unix:!macx: LIBS += -L$$PWD/../../lib/gpsd -lgps
-#INCLUDEPATH += $$PWD/../../lib/gpsd
+unix:!macx: LIBS += -L$$PWD/../../lib/gpsd/lib/ -lgps
+INCLUDEPATH += $$PWD/../../lib/gpsd/include
