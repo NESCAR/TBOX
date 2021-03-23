@@ -8,7 +8,9 @@ extern GHashTable  *tl_net_msg_send_table;
 extern GHashTable  *tl_net_msg_ack_table;
 extern GMutex       tl_net_msg_ack_mutex;
 /* send  jtt808 msg */
-
+/**
+ * @brief term_auth_add, 发送808终端鉴权
+ */
 void term_auth_add(){
      GByteArray *gbarray = g_byte_array_new();
      gint *id = g_new(gint,1);
@@ -16,6 +18,10 @@ void term_auth_add(){
      g_byte_array_append(gbarray,(guint8 *)TermAuthCode,strlen(TermAuthCode));
      g_hash_table_insert(tl_net_msg_send_table,id,gbarray);
 }
+
+/**
+ * @brief location_msg_add,
+ */
 void location_msg_add(){
     GByteArray *gbarray = g_byte_array_new();
     gint *id = g_new(gint,1);
@@ -23,6 +29,11 @@ void location_msg_add(){
     tl_gps_message_get(gbarray);
     g_hash_table_insert(tl_net_msg_send_table,id,gbarray);
 }
+/**
+ * @brief resp_msg_add,发送终端通用应答
+ * @param msg_head
+ * @param res
+ */
 void resp_msg_add(MsgHeader *msg_head, CommonReplyResult res)
 {
     GByteArray *gbarray = g_byte_array_new();
@@ -37,6 +48,11 @@ void resp_msg_add(MsgHeader *msg_head, CommonReplyResult res)
     g_byte_array_append(gbarray,bf,5);
     g_hash_table_insert(tl_net_msg_send_table,id,gbarray);
 }
+/**
+ * @brief lock_auth_res_add,发送上锁授权信息
+ * @param msg
+ * @param updata_time
+ */
 void lock_auth_res_add(LockAuthMsg *msg, guint8 *updata_time)
 {
     GByteArray *gbarray = g_byte_array_new();
@@ -49,6 +65,12 @@ void lock_auth_res_add(LockAuthMsg *msg, guint8 *updata_time)
 }
 
 /* receive  jtt808 msg */
+
+/**
+ * @brief serv_gene_resp_rev,接收通用应答
+ * @param msg_body
+ * @param len
+ */
 void serv_gene_resp_rev(guint8* msg_body, int len)
 {
     CommonRespMsgBody crmb;
@@ -63,7 +85,10 @@ void serv_gene_resp_rev(guint8* msg_body, int len)
     }
     g_mutex_unlock(&tl_net_msg_ack_mutex);
 }
-
+/**
+ * @brief print_hex_can
+ * @param can_data
+ */
 void print_hex_can(guint8* can_data)
 {
     GByteArray *garray_str=g_byte_array_new();
@@ -76,10 +101,20 @@ void print_hex_can(guint8* can_data)
     g_byte_array_free(garray_str,TRUE);
 
 }
+/**
+ * @brief lock_auth_msg_rev,接收授权信息
+ * @param msg_body
+ * @param len
+ */
 void lock_auth_msg_rev(guint8* msg_body, int len)
 {
     lock_auth_msg_set(msg_body);
-
+    printf("lock_auth_msg_rev \r\n");
+    for(int i=0;i<len;i++)
+    {
+        printf("%02x ",msg_body[i]);
+    }
+    printf("/r/n");
     lock_auth_msg_can_send();
 }
 

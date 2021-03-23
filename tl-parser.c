@@ -392,12 +392,14 @@ gboolean tl_parser_parse_can_data(const gchar *device,
     {
         return FALSE;
     }
+//    g_message("g_tl_parser_data ok, CANid %h",can_id);
 
     signal_list = g_hash_table_lookup(g_tl_parser_data.parser_table,
         GINT_TO_POINTER(can_id));
 
     if(signal_list==NULL)
     {
+        g_message("signal_list=NULL");
         return FALSE;
     }
 
@@ -410,6 +412,7 @@ gboolean tl_parser_parse_can_data(const gchar *device,
         list_foreach=g_slist_next(list_foreach))
     {
         signal_data = list_foreach->data;
+        //g_message("signal_data->source: %d",signal_data->source);
 
         if(signal_data->source>0 && signal_data->source!=source)
         {
@@ -448,9 +451,9 @@ gboolean tl_parser_parse_can_data(const gchar *device,
 
         value = (gint64)rvalue;
 
-        /*
-        g_debug("Got %s value %"G_GUINT64_FORMAT".", signal_data->name, value);
-        */
+
+        g_message("XXXXXXXXXXXXXXXXGot %s value %"G_GUINT64_FORMAT".", signal_data->name, value);
+
         item_data.name = signal_data->name;
         item_data.value = value;
         item_data.unit = signal_data->unit;
@@ -458,7 +461,7 @@ gboolean tl_parser_parse_can_data(const gchar *device,
         item_data.list_parent = signal_data->listparent;
         item_data.list_index = (signal_data->listindex!=0);
         item_data.offset = signal_data->offset;
-        tl_logger_current_data_update(&item_data);
+//        tl_logger_current_data_update(&item_data);
     }
     return parsed;
 }

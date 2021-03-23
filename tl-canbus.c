@@ -73,7 +73,7 @@ static void tl_canbus_socket_data_free(TLCANBusSocketData *data)
  * @param can_id 接收到的数据帧id
  * @param can_data CAN数据
  */
-void tl_canbus_ack(guint32 can_id,guint8* can_data)
+void tl_canbus_receive(const gchar* device, guint32 can_id, guint8* can_data,gsize len)
 {
     if(can_id == g_tl_canbus_data.wait_ack_id)
     {
@@ -82,6 +82,7 @@ void tl_canbus_ack(guint32 can_id,guint8* can_data)
         g_mutex_unlock(g_tl_canbus_data.ack_mutex);
         g_message("get can ack, can id: %08x",can_id);
     }
+    can_id = can_id & 0x1FFFFF;
 
     switch (can_id) {
     case AUTH_ACK_ID:
@@ -95,6 +96,8 @@ void tl_canbus_ack(guint32 can_id,guint8* can_data)
         break;
     }
     default:
+        tl_parser_parse_can_data(device,
+            can_id, can_data, len);
         break;
     }
 }
@@ -121,14 +124,14 @@ static gboolean tl_canbus_socket_io_channel_watch(GIOChannel *source,
         {
             if(rsize>=(ssize_t)CAN_MTU)
             {
-                g_print("%s: %d: %d\n",socket_data->device, frame.can_id,frame.can_dlc);
+                g_print("%s: %08x: %d\n",socket_data->device, frame.can_id,frame.can_dlc);
 //                tl_parser_parse_can_data(socket_data->device,
 //                    frame.can_id, frame.data, frame.len);
             gsize len;
             g_io_channel_write_chars(source,(gchar *)&frame,CAN_MTU,&len,NULL);
             g_io_channel_flush(source,NULL);
             g_message("CAN callback send len: %d",len);
-            tl_canbus_ack(frame.can_id,frame.data);
+            tl_canbus_receive(socket_data->device,frame.can_id, frame.data, frame.can_dlc);
 
             g_tl_canbus_data.data_timestamp = g_get_monotonic_time();
             }
@@ -463,7 +466,7 @@ void lock_auth_msg_can_send()
 
     lock_end_frame->can_id=LOCK_END_ID;
     lock_end_frame->can_dlc=sizeof(msg->lock_end);
-    memcpy(lock_end_frame->data,msg->lock_start,sizeof(msg->lock_end));
+    memcpy(lock_end_frame->data,msg->lock_end,sizeof(msg->lock_end));
 //    g_message("lock_end_frame: can_id: %x, can_dlc: %d",lock_end_frame->can_id,lock_end_frame->can_dlc);
 //    print_hex_can(lock_end_frame->data);
 

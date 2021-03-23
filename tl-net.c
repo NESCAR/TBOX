@@ -6,8 +6,9 @@
 
 //ms
 #define UP_MSG_TIME 5000
-//#define IP "192.168.3.23"
-#define IP "47.98.47.221"
+#define IP "192.168.3.8"
+//#define IP "192.168.3.13"
+//#define IP "47.98.47.221"
 #define PORT 6809
 #define MAX_THREAD_NUM 20
 #define REPLAY_CONUNT 1
@@ -51,26 +52,23 @@ void print_hex(const GByteArray* garray)
         g_byte_array_free(garray_str,TRUE);
 }
 
-/*
-* one message one thread or one update(maybe inlcude many messages) one thread
-* here we use the first, but the later is more efficient
-*
-*/
-gboolean send_jt808_msg(gpointer str, G_GNUC_UNUSED gpointer data)
+/**
+ * @brief send_jt808_msg,线程池处理函数，将发送数据加入发送队列并等待回复
+ * @param str
+ * @param data
+ * @return
+ */
+gboolean send_jt808_msg(gpointer str, gpointer data)
 {
 
-     g_message("send_jt808_msg");
+
      SendMsgType * send_msg =( SendMsgType *)str;
      GByteArray *gbarray = send_msg->garray;
 
      gint *flow_id = g_new(gint,1);
      *flow_id =send_msg->flow_id;
+     g_message("send_jt808_msg in thread pool,808 message: ");
      print_hex(gbarray);
-
-//     g_message("id----: %d",*flow_id);
-//     g_message("id_start_index----: %d",id_start_index);
-//     print_hex(gbarray);
-//     g_message("id_start_index----: %d",*flow_id);
 
      // termina general response, don't need response
      if(TermGeneResID == send_msg->msg_id)
@@ -115,7 +113,11 @@ gboolean send_jt808_msg(gpointer str, G_GNUC_UNUSED gpointer data)
      return TRUE;
 }
 
-//send thread
+/**
+ * @brief thread_send_msg：sockct 数据发送线程，将发送队列中的数据发送出去
+ * @param data
+ * @return
+ */
 gpointer thread_send_msg(gpointer data)
 {
     GIOChannel *channel = (GIOChannel *)data;
@@ -124,51 +126,39 @@ gpointer thread_send_msg(gpointer data)
     while(1){
          g_async_queue_lock(tl_net_msg_send_queue);
          gbarray_send= ( GByteArray *)g_async_queue_pop_unlocked(tl_net_msg_send_queue);
-//         g_message("g_async_queue_lock-begin");
-//         print_hex(gbarray_send);
-//         g_message("g_async_queue_lock-end");
          if(gbarray_send->data) g_io_channel_write_chars(channel,(gchar*)gbarray_send->data,gbarray_send->len,NULL,NULL);
          g_io_channel_flush(channel,NULL);
          g_byte_array_free (gbarray_send, TRUE);
          g_async_queue_unlock(tl_net_msg_send_queue);
     }
 }
-/* socket io receive
- *
+/**
+ * 接收的808消息包按照消息ID进行处理
+ * binary_seq: 808消息包
+ * len：808消息包的总长度
  */
 gboolean tl_net_update_receive_msg(guint8* binary_seq, int len)
 {
 
     PackageData pack_data;
     DecodeForMsgHeader(binary_seq,&pack_data,len);
-//   int msg_id = GetMsgID(binary_seq,&msg_id);
-     int msg_id = pack_data.msgHeader.msgId;
-     int body_len = pack_data.msgHeader.msgBodyProperties.msgLenth;
-    g_message("binary_seq size: %d, [0]:%02x,[1]%02x",len,binary_seq[0],binary_seq[1]);
-    g_message("msg_id: %x",pack_data.msgHeader.msgId);
+    int msg_id = pack_data.msgHeader.msgId;
+    int body_len = pack_data.msgHeader.msgBodyProperties.msgLenth;
+//    g_message("binary_seq size: %d, [0]:%02x,[1]%02x",len,binary_seq[0],binary_seq[1]);
+//    g_message("msg_id: %x",pack_data.msgHeader.msgId);
+
 
 
     switch (msg_id) {
     case ServGeneResID:
     {
         serv_gene_resp_rev(pack_data.msgBody,body_len);
-//        CommonRespMsgBody crmb;
-
-//        DecodeForCRMB(&crmb, binary_seq);
-//        gint flow_id = crmb.replyFlowId;
-//        g_mutex_lock(&tl_net_msg_ack_mutex);
-//        gpointer *cond = g_hash_table_lookup(tl_net_msg_ack_table,&flow_id);
-//        if(cond!=NULL)
-//        {
-//            g_cond_signal(cond);
-//            g_message("g_cond_signal(cond)");
-//        }
-//        g_mutex_unlock(&tl_net_msg_ack_mutex);
         break;
     }
     case LockAuthMsgID:
     {
         lock_auth_msg_rev(pack_data.msgBody,body_len);
+
         resp_msg_add(&pack_data.msgHeader,CRR_SUCCESS);
         break;
     }
@@ -179,12 +169,13 @@ gboolean tl_net_update_receive_msg(guint8* binary_seq, int len)
     return TRUE;
 }
 
-/* timeout or immedita
- *
+/**
+ * 发送缓存的数据进行808封包，然后放到线程池中发送
+ * user_data 发送缓存hash table，键名为id，内容为需要发送的裸数据
  */
 gboolean tl_net_update_send_msg(gpointer user_data)
 {
-    //location_msg_add();
+    location_msg_add();
     g_message("tl_net_update_all_msg");
     GHashTable *msg_table = ( GHashTable *)user_data;
     GHashTableIter iter;
@@ -206,8 +197,6 @@ gboolean tl_net_update_send_msg(gpointer user_data)
         g_stpcpy(packageData.msgHeader.terminalPhone,PHONE);
         packageData.msgHeader.flowId = tl_net_flow_id;
 
-        g_message("raw meg_data");
-        print_hex(msg_data);
         EncodeForMsgHeader(&packageData,binarySeq);
         g_byte_array_prepend(msg_data,(guint8*)binarySeq,12);
         // add empty checksum
@@ -241,7 +230,10 @@ gboolean tl_net_update_send_msg(gpointer user_data)
 //    tl_net_add_msg(10,gbarray);
 //    return TRUE;
 //}
-
+/**
+ * @brief tl_net_init tcp
+ * @return
+ */
 gboolean tl_net_init()
 {
     // net
@@ -281,6 +273,11 @@ gboolean tl_net_init()
     term_auth_add();
     return TRUE;
 }
+/** 从接收缓存数据中查找第一个808消息包的起始位置和长度
+ * buffer： 接收缓存
+ * raw_msg_start： 第一个808消息包的起始位
+ * raw_msg_len： 第一个808消息包的长度
+ */
 gboolean tl_net_split_jt808_msg(GByteArray* buffer,gint *raw_msg_start, gint *raw_msg_len)
 {
     g_message("tl_net_split_jt808_msg");
@@ -296,14 +293,19 @@ gboolean tl_net_split_jt808_msg(GByteArray* buffer,gint *raw_msg_start, gint *ra
             {
                 *raw_msg_start = index[0];
                 *raw_msg_len = index[1]-index[0]+1;
-                g_message("raw_msg_start; %d",*raw_msg_start);
-                g_message("raw_msg_len; %d",*raw_msg_len);
+//                g_message("raw_msg_start; %d",*raw_msg_start);
+//                g_message("raw_msg_len; %d",*raw_msg_len);
                 return TRUE;
             }
         }
     }
     return FALSE;
 }
+
+/**
+ * socket io 数据接收处理函数，讲接收的数据缓存，并按照808消息包逐个进行处理
+ *
+ */
 gboolean tl_net_read_msg(GIOChannel *channel, G_GNUC_UNUSED GIOCondition condition, G_GNUC_UNUSED gpointer data)
 {
 
@@ -318,110 +320,29 @@ gboolean tl_net_read_msg(GIOChannel *channel, G_GNUC_UNUSED GIOCondition conditi
         g_object_unref(data);
         return FALSE;
     }
-    g_message("buffer len :%d",len);
+    g_message("tl_net_read_msg,size :%d",len);
     gint raw_msg_start,raw_msg_len, msg_len;
     if(len>0){
        g_byte_array_append(tl_net_read_buffer,buffer,len);
-       g_message("tl_net_read_buffer");
+
+       g_message("tl_net_read_buffer: ");
        print_hex(tl_net_read_buffer);
     }
-       while(tl_net_split_jt808_msg(tl_net_read_buffer,&raw_msg_start,&raw_msg_len)){
-           // one msg write to buffer
-           DoEscapeForReceive(tl_net_read_buffer->data+raw_msg_start,buffer,raw_msg_len,&msg_len);
-           if(Validate(buffer,msg_len)){
-               g_message("Validate");
-               tl_net_update_receive_msg(buffer,msg_len);
-           }
-           else
-           {
-
-           }
-           g_byte_array_remove_range(tl_net_read_buffer,raw_msg_start,raw_msg_len);
+   //  寻找808消息包，逐个进行处理
+   while(tl_net_split_jt808_msg(tl_net_read_buffer,&raw_msg_start,&raw_msg_len)){
+       // 反转义
+       DoEscapeForReceive(tl_net_read_buffer->data+raw_msg_start,buffer,raw_msg_len,&msg_len);
+       if(Validate(buffer,msg_len)){
+           g_message("Receive 808messge is Validate");
+           tl_net_update_receive_msg(buffer,msg_len);
        }
+       else
+       {
 
+       }
+       //从接收缓存中移除已经处理过的数据包
+       g_byte_array_remove_range(tl_net_read_buffer,raw_msg_start,raw_msg_len);
+       }
 
     return TRUE;
 }
-
-
-//gboolean write_msg(GIOChannel *channel, GIOCondition condition, gpointer data)
-//{
-//    gsize len = 0;
-//    gchar *buffer = NULL;
-//    GSocketConnection * connection = (GSocketConnection *)data;
-//    GError *error=NULL;
-
-//    GIOStatus ret = g_io_channel_read_line(channel, &buffer, &len, NULL, NULL);
-//    if (ret == G_IO_STATUS_ERROR){
-//        g_error ("Error reading: %s\n", error->message);
-//        g_object_unref(data);
-//        return FALSE;
-//    }
-//    else if (ret == G_IO_STATUS_EOF) {
-//        g_print("client finished\n");
-//        return FALSE;
-//    }
-//    else {
-//        if(len > 0) {
-//            if ('\n' == buffer[len -1]) {
-//                buffer[len -1] = '\0';
-//            }
-//            g_print("you are write: %s\n", buffer);
-//        }
-//        if(NULL != buffer) {
-//            //判断结束符
-//            if(strcasecmp(buffer, "q") == 0){
-//                g_main_loop_quit(loop);
-//            }
-//        }
-
-//        GOutputStream * out_stream = g_io_stream_get_output_stream(G_IO_STREAM(connection));
-//        gssize ret_int = g_output_stream_write(out_stream, buffer, len, NULL, NULL);
-//        g_output_stream_flush(out_stream, NULL, NULL);
-
-//        if (ret_int < 1) {
-//            g_error("write error");
-//        }
-
-//        g_free(buffer);
-
-//        return TRUE;
-//    }
-//}
-//int main(int argc, char *argv[])
-//{
-
-//    GError *error = NULL;
-//    GSocketClient * client = g_socket_client_new();
-
-//    GSocketConnection * connection = g_socket_client_connect_to_host (client,"127.0.0.1",4000,NULL,&error);
-//    if (error){
-//        g_error("Error: %s\n", error->message);
-//    }else{
-//        g_message("Connection ok");
-//    }
-
-//    //stdin->write_msg
-//    GIOChannel* channel_stdin = g_io_channel_unix_new(1);
-//    if(channel_stdin)
-//    {
-//        g_io_add_watch(channel_stdin, G_IO_IN, write_msg, connection);
-//        g_io_channel_unref(channel_stdin);
-//    }
-
-//    //read_msg
-//    GSocket *socket = g_socket_connection_get_socket(connection);
-//    gint fd = g_socket_get_fd(socket);
-//    GIOChannel *channel = g_io_channel_unix_new(fd);
-//    if (channel) {
-//        g_io_add_watch(channel, G_IO_IN, (GIOFunc)read_msg, connection);
-//        g_io_channel_unref(channel);
-//    }
-
-//    loop = g_main_loop_new(NULL, FALSE);
-//    g_main_loop_run(loop);
-
-//    g_main_loop_unref(loop);
-
-//    return TRUE;
-//}
