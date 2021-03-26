@@ -69,8 +69,8 @@ static gpointer tl_gps_work_thread(gpointer user_data)
             else
             {
                 g_message("gps_waiting is ok");
-                g_message("%d", gdata.fix.status);
-                g_message("%d", gdata.fix.mode);
+//                g_message("%d", gdata.fix.status);
+//                g_message("%d", gdata.fix.mode);
                 if( (gdata.fix.mode==MODE_2D ||
                     gdata.fix.mode==MODE_3D) && !isnan(gdata.fix.latitude) &&
                     !isnan(gdata.fix.longitude))

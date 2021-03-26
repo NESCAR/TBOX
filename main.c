@@ -5,7 +5,7 @@
 #include<tl-gps.h>
 #include<tl-net.h>
 #include<tl-parser.h>
-
+#include<tl-jtt808-msg.h>
 int main()
 {
     setbuf(stdout, NULL);
@@ -15,7 +15,6 @@ int main()
     gchar *parse_file_path;
     const gchar *conf_file_path;
     conf_file_path = "/home/root";
-
 
     g_tl_main_loop = g_main_loop_new(NULL, FALSE);
     tl_gps_init();

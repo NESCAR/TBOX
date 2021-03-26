@@ -39,6 +39,7 @@ void axle_msg_add(){
     gint *id = g_new(gint,1);
     *id = AxleMsgId;
     AxleLodeMsg be_msg;
+    get_time_hex( tl_jt808msg_data.axle_load.time);
     AxleLoadMsgUpToBE(&tl_jt808msg_data.axle_load,&be_msg);
     g_byte_array_append(gbarray,(guint8 *)&be_msg,sizeof(be_msg));
 
@@ -149,5 +150,18 @@ void lock_auth_msg_rev(guint8* msg_body, int len)
     printf("/r/n");
     lock_auth_msg_can_send();
 }
+void get_time_hex(guint8 *time)
+{
+    GDateTime *datetime  = g_date_time_new_now_local();
+    gchar *date_fmt = g_date_time_format(datetime, "%y%m%d%H%M%S");
+    time[0] = (date_fmt[0]-'0') *16+(date_fmt[1]-'0');
+    time[1] = (date_fmt[2]-'0') *16+(date_fmt[3]-'0');
+    time[2] = (date_fmt[4]-'0') *16+(date_fmt[5]-'0');
+    time[3] = (date_fmt[6]-'0') *16+(date_fmt[7]-'0');
+    time[4] = (date_fmt[8]-'0') *16+(date_fmt[9]-'0');
+    time[5] = (date_fmt[10]-'0') *16+(date_fmt[11]-'0');
+//  g_message("%02x%02x%02x%02x%02x%02x",time[0],time[1],time[2],time[3],time[4],time[5]);
+}
+
 
 

@@ -98,5 +98,5 @@ void resp_msg_add(MsgHeader *msg_head, CommonReplyResult res);
 void serv_gene_resp_rev(guint8* binary_seq, int len);
 void lock_auth_msg_rev(guint8* binary_seq, int len);
 void lock_auth_msg_rev(guint8* msg_body, int len);
-
+void get_time_hex(guint8 *time);
 #endif // TLJTT808MSG_H
