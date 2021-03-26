@@ -15,7 +15,7 @@ int main()
     gchar *parse_file_path;
     const gchar *conf_file_path;
     conf_file_path = "/home/root";
-    gps_init();
+
 
     g_tl_main_loop = g_main_loop_new(NULL, FALSE);
     tl_gps_init();

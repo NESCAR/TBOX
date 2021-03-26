@@ -11,6 +11,8 @@ extern GMutex       tl_net_msg_ack_mutex;
 /**
  * @brief term_auth_add, 发送808终端鉴权
  */
+
+AllCanJt808Msg tl_jt808msg_data;
 void term_auth_add(){
      GByteArray *gbarray = g_byte_array_new();
      gint *id = g_new(gint,1);
@@ -20,13 +22,25 @@ void term_auth_add(){
 }
 
 /**
- * @brief location_msg_add,
+ * @brief location_msg_add,位置信息上报
  */
 void location_msg_add(){
     GByteArray *gbarray = g_byte_array_new();
     gint *id = g_new(gint,1);
     *id = LocationMsgUpID;
     tl_gps_message_get(gbarray);
+    g_hash_table_insert(tl_net_msg_send_table,id,gbarray);
+}
+/**
+ * @brief axle_msg_add,轴负载信息上报
+ */
+void axle_msg_add(){
+    GByteArray *gbarray = g_byte_array_new();
+    gint *id = g_new(gint,1);
+    *id = AxleMsgId;
+    AxleLodeMsg be_msg;
+    AxleLoadMsgUpToBE(&tl_jt808msg_data.axle_load,&be_msg);
+    g_byte_array_append(gbarray,(guint8 *)&be_msg,sizeof(be_msg));
     g_hash_table_insert(tl_net_msg_send_table,id,gbarray);
 }
 /**
@@ -62,6 +76,23 @@ void lock_auth_res_add(LockAuthMsg *msg, guint8 *updata_time)
     g_byte_array_append(gbarray,(guint8 *)msg,sizeof(LockAuthMsg));
     g_byte_array_append(gbarray,(guint8 *)updata_time,6);
     g_hash_table_insert(tl_net_msg_send_table,id,gbarray);
+}
+
+
+/**
+ * @brief can_data_get, 对解析出来的CAN信号进行名称进行赋值，待完善
+ * @param name，信号名称
+ * @param value，信号值（已经解析出物理含义）
+ */
+
+void can_data_get(gchar *name, gint64 value)
+{
+    if(g_strcmp0(name,"all_axle")==0)
+    {
+        tl_jt808msg_data.axle_load.all_load=value;
+        axle_msg_add();
+
+    }
 }
 
 /* receive  jtt808 msg */

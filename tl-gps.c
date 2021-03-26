@@ -181,7 +181,7 @@ void tl_gps_state_get(guint8 *state, guint32 *latitude, guint32 *longitude)
  */
 void tl_gps_message_get(GByteArray *garray)
 {
-    LocationMsgUp msg, le_msg;
+    LocationMsgUp msg, be_msg;
     msg.alarm = 0;
     msg.status =0;
     msg.latitude  = g_tl_gps_data.latitude;
@@ -192,7 +192,7 @@ void tl_gps_message_get(GByteArray *garray)
 //                          msg.longitude, msg.speed,
 //                          0);
 
-    LocationMsgUpToBE(&msg,&le_msg);
-    g_byte_array_append(garray,(guint8 *)&le_msg,sizeof(le_msg));
+    LocationMsgUpToBE(&msg,&be_msg);
+    g_byte_array_append(garray,(guint8 *)&be_msg,sizeof(be_msg));
 }
 
