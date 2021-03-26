@@ -41,6 +41,7 @@ void axle_msg_add(){
     AxleLodeMsg be_msg;
     AxleLoadMsgUpToBE(&tl_jt808msg_data.axle_load,&be_msg);
     g_byte_array_append(gbarray,(guint8 *)&be_msg,sizeof(be_msg));
+
     g_hash_table_insert(tl_net_msg_send_table,id,gbarray);
 }
 /**

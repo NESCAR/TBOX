@@ -2,7 +2,7 @@
   <name>DBC Data</name>
   <rev>202007070000</rev>
   <idext>0</idext>
-  <signal id='0x001' name='BMS08_BatNumber' byteorder='BE' firstbyte='0' firstbit='0' bitlength='8' unit='1' offset='0' source='0' />
+  <signal id='0x100' name='all_axle' byteorder='BE' firstbyte='0' firstbit='0' bitlength='8' unit='1' offset='0' source='0' />
  
 </tbox>
 
